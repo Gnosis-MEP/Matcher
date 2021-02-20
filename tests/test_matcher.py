@@ -49,8 +49,9 @@ class TestMatcher(MockedServiceStreamTestCase):
             'id': 1,
             'action': 'addQueryMatching',
             'query_id': 'query_id1',
-            'match': 'MATCH (c1:Car) AND (c2:Car {color:"white"})',
-            'where': 'WHERE c1.color = "blue" or c1.color = "black"',
+            'match': 'MATCH (c1:Car), (c2:Car {color:"white"})',
+            'optional_match': 'OPTIONAL MATCH (c1:Car), (c2:Car {color:"white"})',
+            'where': 'WHERE c1.color = "blue" OR c1.color = "black"',
             'ret': 'RETURN c1, c2',
         }
         action = event_data['action']
@@ -59,25 +60,29 @@ class TestMatcher(MockedServiceStreamTestCase):
         mocked_add_query_m.assert_called_once_with(
             query_id=event_data['query_id'],
             match=event_data['match'],
+            optional_match=event_data['optional_match'],
             where=event_data['where'],
             ret=event_data['ret']
         )
 
     def test_add_query_matching_action_should_update_datastructure(self):
         query_id = 'query_id1'
-        match = 'MATCH (c1:Car) AND (c2:Car {color:"white"})'
-        where = 'WHERE c1.color = "blue" or c1.color = "black"'
+        match = 'MATCH (c1:Car), (c2:Car {color:"white"})'
+        where = 'WHERE c1.color = "blue" OR c1.color = "black"'
+        optional_match = 'OPTIONAL MATCH (c1:Car), (c2:Car {color:"white"})'
         ret = 'RETURN c1, c2'
-        self.service.add_query_matching_action(query_id, match, where, ret)
+        self.service.add_query_matching_action(query_id, match, optional_match, where, ret)
         self.assertIn(query_id, self.service.query_matching.keys())
         self.assertDictEqual(
             {
                 'match': match,
+                'optional_match': optional_match,
                 'where': where,
                 'ret': ret,
                 'cypher_query': (
-                    'MATCH (c1:Car) AND (c2:Car {color:"white"})'
-                    ' WHERE c1.color = "blue" or c1.color = "black"'
+                    'MATCH (c1:Car), (c2:Car {color:"white"})'
+                    ' OPTIONAL MATCH (c1:Car), (c2:Car {color:"white"})'
+                    ' WHERE c1.color = "blue" OR c1.color = "black"'
                     ' RETURN c1, c2'
                 )
             },
@@ -99,11 +104,17 @@ class TestMatcher(MockedServiceStreamTestCase):
         )
 
     def test_re_create_cypher_query(self):
-        cypher = self.service.re_create_cypher_query('match', 'where', 'ret')
-        self.assertEqual(cypher, 'match where ret')
+        cypher = self.service.re_create_cypher_query('match', 'optional', 'where', 'ret')
+        self.assertEqual(cypher, 'match optional where ret')
 
-        cypher = self.service.re_create_cypher_query('match', None, 'ret')
-        self.assertEqual(cypher, 'match  ret')
+        cypher = self.service.re_create_cypher_query('match', None, None, 'ret')
+        self.assertEqual(cypher, 'match   ret')
+
+        cypher = self.service.re_create_cypher_query('match', 'optional', None, 'ret')
+        self.assertEqual(cypher, 'match optional  ret')
+
+        cypher = self.service.re_create_cypher_query('match', None, 'where', 'ret')
+        self.assertEqual(cypher, 'match  where ret')
 
     @patch('matcher.service.Matcher.send_matched_events_to_forwarder')
     def test_match_query_should_call_graph_db_api_with_proper_parameters(self, mocked_send_forwarder):

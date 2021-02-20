@@ -65,15 +65,17 @@ class Matcher(BaseTracerService):
         vekg_stream = event_data['vekg_stream']
         self.match_query(query_id, vekg_stream)
 
-    def re_create_cypher_query(self, match, where, ret):
+    def re_create_cypher_query(self, match, optional_match, where, ret):
+        optional_match = optional_match if optional_match is not None else ''
         where = where if where is not None else ''
-        cypher_query = ' '.join([match, where, ret])
+        cypher_query = ' '.join([match, optional_match, where, ret])
         return cypher_query
 
-    def add_query_matching_action(self, query_id, match, where, ret):
-        cypher_query = self.re_create_cypher_query(match, where, ret)
+    def add_query_matching_action(self, query_id, match, optional_match, where, ret):
+        cypher_query = self.re_create_cypher_query(match, optional_match, where, ret)
         self.query_matching[query_id] = {
             'match': match,
+            'optional_match': optional_match,
             'where': where,
             'ret': ret,
             'cypher_query': cypher_query
@@ -86,6 +88,7 @@ class Matcher(BaseTracerService):
             self.add_query_matching_action(
                 query_id=event_data['query_id'],
                 match=event_data['match'],
+                optional_match=event_data['optional_match'],
                 where=event_data['where'],
                 ret=event_data['ret']
             )
