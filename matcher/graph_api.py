@@ -6,17 +6,22 @@ class RedisGraphDB():
         self.redis_graph_db = redis_graph_db
         self.query_graphs = {}
 
+    def _clean_identifier(self, identifier):
+        if ' ' in identifier:
+            return f'`{identifier}`'
+        return identifier
+
     def add_vekg_nodes_to_graph(self, graph, note_tuples):
         for node_id, properties in note_tuples:
-            label = properties.pop('label')
+            label = self._clean_identifier(properties.pop('label'))
             new_node = Node(label=label, properties=properties)
             graph.add_node(new_node)
-        return
+        return graph
 
     def add_vekg_edges_to_graph(self, graph, edges_tuples):
         for edge in edges_tuples:
             node_u, node_v, properties = edge
-            relation = properties.pop('relation', '')
+            relation = self._clean_identifier(properties.pop('relation'))
             graph.add_edge(node_u, node_v, relation=relation, properties=properties)
         return graph
 
@@ -29,10 +34,10 @@ class RedisGraphDB():
 
     def add_query_vekg_window(self, query_id, vekg_window):
         query_graph = Graph(query_id, self.redis_graph_db)
-        for vekg in vekg_window:
-            query_graph = self.add_vekg_to_graph(query_graph, vekg_window)
-
-        query_graph.commit()
+        for event in vekg_window:
+            vekg = event.get('vekg', {})
+            query_graph = self.add_vekg_to_graph(query_graph, vekg)
+            query_graph.commit()
         self.query_graphs[query_id] = query_graph
         return self.query_graphs[query_id]
 
@@ -45,4 +50,3 @@ class RedisGraphDB():
     def clean_query_vekg_window(self, query_id):
         self.query_graphs[query_id].delete()
         del self.query_graphs[query_id]
-
