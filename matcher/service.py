@@ -1,4 +1,5 @@
 import threading
+import copy
 
 from event_service_utils.logging.decorators import timer_logger
 from event_service_utils.services.tracer import BaseTracerService
@@ -49,12 +50,15 @@ class Matcher(BaseTracerService):
         self.write_event_with_trace(new_event_data, self.forwarder_stream)
 
     def match_query(self, query_id, vekg_stream):
-        cypher_query = self.query_matching[query_id]['cypher_query']
-        self.graph_db_api.add_query_vekg_window(query_id, vekg_stream)
-        match_ret = self.graph_db_api.match_query(query_id, cypher_query)
-        if match_ret != []:
-            self.send_matched_events_to_forwarder(query_id, match_ret, vekg_stream)
-        self.graph_db_api.clean_query_vekg_window(query_id)
+        try:
+            cypher_query = self.query_matching[query_id]['cypher_query']
+            original_vekg_stream = copy.deepcopy(vekg_stream)
+            self.graph_db_api.add_query_vekg_window(query_id, vekg_stream)
+            match_ret = self.graph_db_api.match_query(query_id, cypher_query)
+            if match_ret != []:
+                self.send_matched_events_to_forwarder(query_id, match_ret, original_vekg_stream)
+        finally:
+            self.graph_db_api.clean_query_vekg_window(query_id)
 
     @timer_logger
     def process_data_event(self, event_data, json_msg):

@@ -37,7 +37,7 @@ class RedisGraphDB():
         for event in vekg_window:
             vekg = event.get('vekg', {})
             query_graph = self.add_vekg_to_graph(query_graph, vekg)
-            query_graph.commit()
+        query_graph.commit()
         self.query_graphs[query_id] = query_graph
         return self.query_graphs[query_id]
 
@@ -45,8 +45,11 @@ class RedisGraphDB():
         query_graph = self.query_graphs[query_id]
 
         result = query_graph.query(cypher_query)
-        return result
+        return result.result_set
 
     def clean_query_vekg_window(self, query_id):
-        self.query_graphs[query_id].delete()
-        del self.query_graphs[query_id]
+        try:
+            self.query_graphs[query_id].delete()
+            del self.query_graphs[query_id]
+        except:
+            pass
