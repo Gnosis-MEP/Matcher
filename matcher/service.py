@@ -29,7 +29,6 @@ class Matcher(BaseTracerService):
         self.forwarder_stream = self.stream_factory.create(key=forwarder_stream_key, stype='streamOnly')
 
         self.graph_db_api = graph_db_api
-
         self.query_matching = {}
 
     def prepare_events_for_forwarder(self, query_id, match_ret, vekg_stream):
@@ -49,14 +48,14 @@ class Matcher(BaseTracerService):
         self.logger.debug(f'Sending Matched VEKG Stream to Forwarder: {new_event_data}')
         self.write_event_with_trace(new_event_data, self.forwarder_stream)
 
+    @timer_logger
     def match_query(self, query_id, vekg_stream):
         try:
             cypher_query = self.query_matching[query_id]['cypher_query']
-            original_vekg_stream = copy.deepcopy(vekg_stream)
             self.graph_db_api.add_query_vekg_window(query_id, vekg_stream)
             match_ret = self.graph_db_api.match_query(query_id, cypher_query)
             if match_ret != []:
-                self.send_matched_events_to_forwarder(query_id, match_ret, original_vekg_stream)
+                self.send_matched_events_to_forwarder(query_id, match_ret, vekg_stream)
         finally:
             self.graph_db_api.clean_query_vekg_window(query_id)
 
