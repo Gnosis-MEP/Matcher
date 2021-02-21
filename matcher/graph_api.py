@@ -19,8 +19,8 @@ class RedisGraphDB():
             label = self._clean_identifier(node_kwargs.pop('label'))
             node_id = node_kwargs.pop('id')
             new_node = Node(node_id=node_id, label=label, properties=properties)
-            self.query_graphs_nodes[query_id][node_id] = new_node
             graph.add_node(new_node)
+            self.query_graphs_nodes[query_id][node_id] = new_node
         return graph
 
     def add_vekg_edges_to_graph(self, query_id, graph, edges_tuples):
@@ -47,14 +47,18 @@ class RedisGraphDB():
         return edge_tuples + same_frames_relations
 
     def add_vekg_to_graph(self, query_id, graph, event_id, vekg):
+
         node_tuples = vekg.get('nodes', [])
         graph = self.add_vekg_nodes_to_graph(query_id, graph, event_id, node_tuples)
+
         edge_tuples = self.add_same_frame_rel_edges(graph, event_id, vekg)
         graph = self.add_vekg_edges_to_graph(query_id, graph, edge_tuples)
+
         return graph
 
     def add_query_vekg_window(self, query_id, vekg_window):
-        query_graph = Graph(query_id, self.redis_graph_db)
+        query_graph_id = f'graph-{query_id}'
+        query_graph = Graph(query_graph_id, self.redis_graph_db)
         self.query_graphs_nodes[query_id] = {}
         for event in vekg_window:
             event_id = event['id']
