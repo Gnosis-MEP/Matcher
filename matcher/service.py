@@ -1,5 +1,4 @@
 import threading
-import copy
 
 from event_service_utils.logging.decorators import timer_logger
 from event_service_utils.services.tracer import BaseTracerService
