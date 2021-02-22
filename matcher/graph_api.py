@@ -35,6 +35,9 @@ class RedisGraphDB():
         return graph
 
     def add_same_frame_rel_edges(self, graph, event_id, vekg):
+        """maybe best to put this relationship creation in another service
+        but for now it will do
+        """
         node_tuples = vekg.get('nodes', [])
         same_frames_relations = []
         for node_u in node_tuples:
