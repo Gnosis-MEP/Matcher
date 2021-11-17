@@ -6,7 +6,7 @@ services:
       - "6379:6379"
 
   service:
-    image: registry.insight-centre.org/sit/mps/felipe-phd/matcher:dev
+    image: registry.insight-centre.org/sit/mps/gnosis-mep/matcher:dev
     command: echo "ok"
     build:
       context: '.'
