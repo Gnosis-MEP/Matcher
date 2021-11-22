@@ -7,8 +7,8 @@ stages:
 
 variables:
   SERVICE_STREAM_KEY: ma-data
-  SERVICE_CMD_KEY: ma-cmd
-  FORWARDER_STREAM_KEY: fw-data
+  LISTEN_EVENT_TYPE_QUERY_CREATED: QueryCreated
+  LISTEN_EVENT_TYPE_QUERY_REMOVED: QueryRemoved
   LOGGING_LEVEL: DEBUG
   DOCKER_HOST: tcp://docker:2375/
   DOCKER_DRIVER: overlay2
