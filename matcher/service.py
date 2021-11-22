@@ -1,31 +1,31 @@
 import threading
 
 from event_service_utils.logging.decorators import timer_logger
-from event_service_utils.services.tracer import BaseTracerService
+from event_service_utils.services.event_driven import BaseEventDrivenCMDService
 from event_service_utils.tracing.jaeger import init_tracer
 
 
-class Matcher(BaseTracerService):
+class Matcher(BaseEventDrivenCMDService):
     def __init__(self,
-                 service_stream_key, service_cmd_key,
-                 forwarder_stream_key,
-                 graph_db_api,
+                 service_stream_key, service_cmd_key_list,
+                 pub_event_list, service_details,
                  stream_factory,
+                 graph_db_api,
                  logging_level,
                  tracer_configs):
         tracer = init_tracer(self.__class__.__name__, **tracer_configs)
         super(Matcher, self).__init__(
             name=self.__class__.__name__,
             service_stream_key=service_stream_key,
-            service_cmd_key=service_cmd_key,
+            service_cmd_key_list=service_cmd_key_list,
+            pub_event_list=pub_event_list,
+            service_details=service_details,
             stream_factory=stream_factory,
             logging_level=logging_level,
             tracer=tracer,
         )
-        self.cmd_validation_fields = ['id', 'action']
+        self.cmd_validation_fields = ['id']
         self.data_validation_fields = ['id']
-
-        self.forwarder_stream = self.stream_factory.create(key=forwarder_stream_key, stype='streamOnly')
 
         self.graph_db_api = graph_db_api
         self.query_matching = {}
@@ -83,16 +83,17 @@ class Matcher(BaseTracerService):
             'cypher_query': cypher_query
         }
 
-    def process_action(self, action, event_data, json_msg):
-        if not super(Matcher, self).process_action(action, event_data, json_msg):
+    def process_event_type(self, event_type, event_data, json_msg):
+        if not super(Matcher, self).process_event_type(event_type, event_data, json_msg):
             return False
-        if action == 'addQueryMatching':
+        if event_type == 'QueryCreated':
+            parsed_query = event_data['parsed_query']
             self.add_query_matching_action(
                 query_id=event_data['query_id'],
-                match=event_data['match'],
-                optional_match=event_data['optional_match'],
-                where=event_data['where'],
-                ret=event_data['ret']
+                match=parsed_query['match'],
+                optional_match=parsed_query['optional_match'],
+                where=parsed_query['where'],
+                ret=parsed_query['ret']
             )
 
     def log_state(self):
