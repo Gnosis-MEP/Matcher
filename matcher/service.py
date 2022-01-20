@@ -11,6 +11,7 @@ class Matcher(BaseEventDrivenCMDService):
                  pub_event_list, service_details,
                  stream_factory,
                  graph_db_api,
+                 forwarder_stream_key,
                  logging_level,
                  tracer_configs):
         tracer = init_tracer(self.__class__.__name__, **tracer_configs)
@@ -26,6 +27,9 @@ class Matcher(BaseEventDrivenCMDService):
         )
         self.cmd_validation_fields = ['id']
         self.data_validation_fields = ['id']
+
+        self.forwarder_stream_key = forwarder_stream_key
+        self.forwarder_stream = self.stream_factory.create(key=forwarder_stream_key, stype='streamOnly')
 
         self.graph_db_api = graph_db_api
         self.query_matching = {}

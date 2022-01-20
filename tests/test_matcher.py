@@ -7,6 +7,7 @@ from matcher.service import Matcher
 
 from matcher.conf import (
     SERVICE_STREAM_KEY,
+    FORWARDER_STREAM_KEY,
     SERVICE_CMD_KEY_LIST,
     SERVICE_DETAILS,
     PUB_EVENT_LIST,
@@ -20,6 +21,7 @@ class TestMatcher(MockedEventDrivenServiceStreamTestCase):
         'pub_event_list': PUB_EVENT_LIST,
         'service_details': SERVICE_DETAILS,
         'graph_db_api': lambda x: (),
+        'forwarder_stream_key': FORWARDER_STREAM_KEY,
         'logging_level': 'ERROR',
         'tracer_configs': {'reporting_host': None, 'reporting_port': None},
     }

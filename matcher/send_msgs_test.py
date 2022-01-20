@@ -40,7 +40,7 @@ def main():
     queryadd_cmd = stream_factory.create(LISTEN_EVENT_TYPE_QUERY_CREATED, stype='streamOnly')
     import ipdb; ipdb.set_trace()
 
-    pubJoin_cmd.write_events(
+    queryadd_cmd.write_events(
         new_msg(
             {
                 'publisher_id': 'pid',

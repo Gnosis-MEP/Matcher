@@ -9,6 +9,7 @@ from matcher.conf import (
     REDIS_PORT,
     PUB_EVENT_LIST,
     SERVICE_STREAM_KEY,
+    FORWARDER_STREAM_KEY,
     SERVICE_CMD_KEY_LIST,
     LOGGING_LEVEL,
     TRACER_REPORTING_HOST,
@@ -31,6 +32,7 @@ def run_service():
         service_details=SERVICE_DETAILS,
         stream_factory=stream_factory,
         graph_db_api=graph_db_api,
+        forwarder_stream_key=FORWARDER_STREAM_KEY,
         logging_level=LOGGING_LEVEL,
         tracer_configs=tracer_configs
     )
