@@ -1,68 +1,89 @@
 from unittest.mock import patch, MagicMock
 
-from event_service_utils.tests.base_test_case import MockedServiceStreamTestCase
+from event_service_utils.tests.base_test_case import MockedEventDrivenServiceStreamTestCase
 from event_service_utils.tests.json_msg_helper import prepare_event_msg_tuple
 
 from matcher.service import Matcher
 
 from matcher.conf import (
     SERVICE_STREAM_KEY,
-    SERVICE_CMD_KEY,
     FORWARDER_STREAM_KEY,
+    SERVICE_CMD_KEY_LIST,
+    SERVICE_DETAILS,
+    PUB_EVENT_LIST,
 )
 
 
-class TestMatcher(MockedServiceStreamTestCase):
+class TestMatcher(MockedEventDrivenServiceStreamTestCase):
     GLOBAL_SERVICE_CONFIG = {
         'service_stream_key': SERVICE_STREAM_KEY,
-        'service_cmd_key': SERVICE_CMD_KEY,
-        'forwarder_stream_key': FORWARDER_STREAM_KEY,
+        'service_cmd_key_list': SERVICE_CMD_KEY_LIST,
+        'pub_event_list': PUB_EVENT_LIST,
+        'service_details': SERVICE_DETAILS,
         'graph_db_api': lambda x: (),
+        'forwarder_stream_key': FORWARDER_STREAM_KEY,
         'logging_level': 'ERROR',
         'tracer_configs': {'reporting_host': None, 'reporting_port': None},
     }
     SERVICE_CLS = Matcher
+
+    MOCKED_CG_STREAM_DICT = {
+
+    }
     MOCKED_STREAMS_DICT = {
         SERVICE_STREAM_KEY: [],
-        SERVICE_CMD_KEY: [],
+        'cg-Matcher': MOCKED_CG_STREAM_DICT,
     }
 
-    @patch('matcher.service.Matcher.process_action')
-    def test_process_cmd_should_call_process_action(self, mocked_process_action):
-        action = 'someAction'
+    @patch('matcher.service.Matcher.process_event_type')
+    def test_process_cmd_should_call_process_event_type(self, mocked_process_event_type):
+        event_type = 'SomeEventType'
+        unicode_event_type = event_type.encode('utf-8')
         event_data = {
             'id': 1,
-            'action': action,
+            'action': event_type,
             'some': 'stuff'
         }
         msg_tuple = prepare_event_msg_tuple(event_data)
-        mocked_process_action.__name__ = 'process_action'
+        mocked_process_event_type.__name__ = 'process_event_type'
 
-        self.service.service_cmd.mocked_values = [msg_tuple]
+        self.service.service_cmd.mocked_values_dict = {
+            unicode_event_type: [msg_tuple]
+        }
         self.service.process_cmd()
-        self.assertTrue(mocked_process_action.called)
-        self.service.process_action.assert_called_once_with(action=action, event_data=event_data, json_msg=msg_tuple[1])
+        self.assertTrue(mocked_process_event_type.called)
+        self.service.process_event_type.assert_called_once_with(event_type=event_type, event_data=event_data, json_msg=msg_tuple[1])
 
     @patch('matcher.service.Matcher.add_query_matching_action')
-    def test_process_action_should_call_add_query_matching_with_proper_parameters(self, mocked_add_query_m):
+    def test_process_event_type_should_call_add_query_matching_with_proper_parameters(self, mocked_add_query_m):
+        parsed_query = {
+            'from': ['pub1'],
+            'content': ['ObjectDetection', 'ColorDetection'],
+            'window': {
+                'window_type': 'TUMBLING_COUNT_WINDOW',
+                'args': [2]
+            },
+            'match': "MATCH (c1:Car {color:'blue'}), (c2:Car {color:'white'})",
+            'optional_match': 'optional_match',
+            'where': 'where',
+            'ret': 'RETURN *',
+            # 'cypher_query': query['cypher_query'],
+        }
         event_data = {
             'id': 1,
-            'action': 'addQueryMatching',
-            'query_id': 'query_id1',
-            'match': 'MATCH (c1:Car), (c2:Car {color:"white"})',
-            'optional_match': 'OPTIONAL MATCH (c1:Car), (c2:Car {color:"white"})',
-            'where': 'WHERE c1.color = "blue" OR c1.color = "black"',
-            'ret': 'RETURN c1, c2',
+            'query_id': 'query-id',
+            'subscriber_id': 'subscriber_id',
+            'parsed_query': parsed_query,
         }
-        action = event_data['action']
+        event_type = 'QueryCreated'
         json_msg = prepare_event_msg_tuple(event_data)[1]
-        self.service.process_action(action, event_data, json_msg)
+        self.service.process_event_type(event_type, event_data, json_msg)
         mocked_add_query_m.assert_called_once_with(
             query_id=event_data['query_id'],
-            match=event_data['match'],
-            optional_match=event_data['optional_match'],
-            where=event_data['where'],
-            ret=event_data['ret']
+            match=parsed_query['match'],
+            optional_match=parsed_query['optional_match'],
+            where=parsed_query['where'],
+            ret=parsed_query['ret']
         )
 
     def test_add_query_matching_action_should_update_datastructure(self):
