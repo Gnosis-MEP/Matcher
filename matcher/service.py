@@ -43,6 +43,7 @@ class Matcher(BaseEventDrivenCMDService):
             'id': self.service_based_random_event_id(),
             'vekg_stream': vekg_stream,
             'query_id': query_id,
+            'match_return': match_ret,
         }
         return new_event_data
 
@@ -53,11 +54,13 @@ class Matcher(BaseEventDrivenCMDService):
 
     @timer_logger
     def match_query(self, query_id, vekg_stream):
+
         try:
             cypher_query = self.query_matching[query_id]['cypher_query']
             self.graph_db_api.add_query_vekg_window(query_id, vekg_stream)
             match_ret = self.graph_db_api.match_query(query_id, cypher_query)
-            if match_ret != []:
+            # if match_ret != []:
+            if len(match_ret.keys()):
                 self.send_matched_events_to_forwarder(query_id, match_ret, vekg_stream)
         finally:
             self.graph_db_api.clean_query_vekg_window(query_id)
@@ -69,6 +72,7 @@ class Matcher(BaseEventDrivenCMDService):
 
         query_id = event_data['query_id']
         vekg_stream = event_data['vekg_stream']
+
         self.match_query(query_id, vekg_stream)
 
     def re_create_cypher_query(self, match, optional_match, where, ret):

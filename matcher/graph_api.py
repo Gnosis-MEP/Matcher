@@ -71,11 +71,35 @@ class RedisGraphDB():
         self.query_graphs[query_id] = query_graph
         return self.query_graphs[query_id]
 
+    def format_return_dict(self, query_graph, query_result):
+        query_res_dict = {}
+        if not query_result.is_empty():
+            for res_row in query_result.result_set:
+                for col_index, (coltype, bcol) in enumerate(query_result.header):
+                    if isinstance(bcol, str):
+                        col = bcol
+                    else:
+                        col = bcol.decode('utf-8')
+                    dict_row = query_res_dict.setdefault(col, [])
+                    col_res = res_row[col_index]
+                    clean_col_res = None
+                    if isinstance(col_res, Node):
+                        clean_col_res = col_res.properties
+                    elif isinstance(col_res, Edge):
+                        clean_col_res = {
+                            'src_node': col_res.src_node,
+                            'relation': col_res.relation,
+                            'dest_node': col_res.dest_node
+                        }
+                    else:
+                        clean_col_res = col_res
+                    dict_row.append(clean_col_res)
+        return query_res_dict
+
     def match_query(self, query_id, cypher_query):
         query_graph = self.query_graphs[query_id]
-
         result = query_graph.query(cypher_query)
-        return result.result_set
+        return self.format_return_dict(query_graph, result)
 
     def clean_query_vekg_window(self, query_id):
         try:
