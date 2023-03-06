@@ -167,6 +167,9 @@ EVENT_DATA_MSG = """
 
 EVENT_DATA_JSON = json.loads(EVENT_DATA_MSG)
 
+
+# REGISTER QUERY countCupeees OUTPUT AnnotatedRetVideoStream CONTENT ObjectDetection MATCH (p:person) FROM publisher1 WITHIN TUMBLING_COUNT_WINDOW(1) WITH_QOS accuracy = 5, latency = 8, energy_consumption = 3 RETURN p, count(p) as PeopleCount
+
 NEW_QUERY_JSON = {
     "subscriber_id": "sub_id",
     "query_id": "d16591a615e99c5c76ac7e8a38be1f32",

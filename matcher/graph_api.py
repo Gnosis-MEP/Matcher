@@ -72,7 +72,10 @@ class RedisGraphDB():
         return self.query_graphs[query_id]
 
     def format_return_dict(self, query_graph, query_result):
-        query_res_dict = {}
+        node_rets = {}
+        node_ids = set()
+        edge_rets = {}
+        primitives_rets = {}
         if not query_result.is_empty():
             for res_row in query_result.result_set:
                 for col_index, (coltype, bcol) in enumerate(query_result.header):
@@ -80,21 +83,34 @@ class RedisGraphDB():
                         col = bcol
                     else:
                         col = bcol.decode('utf-8')
-                    dict_row = query_res_dict.setdefault(col, [])
                     col_res = res_row[col_index]
                     clean_col_res = None
+                    ret_type_dict = None
                     if isinstance(col_res, Node):
                         clean_col_res = col_res.properties
+                        node_id = clean_col_res.get('id')
+                        if node_id:
+                            node_ids.add(node_id)
+                        ret_type_dict = node_rets
                     elif isinstance(col_res, Edge):
                         clean_col_res = {
                             'src_node': col_res.src_node,
                             'relation': col_res.relation,
                             'dest_node': col_res.dest_node
                         }
+                        ret_type_dict = edge_rets
                     else:
                         clean_col_res = col_res
+                        ret_type_dict = primitives_rets
+                    dict_row = ret_type_dict.setdefault(col, [])
                     dict_row.append(clean_col_res)
-        return query_res_dict
+        return {
+            'is_empty': query_result.is_empty(),
+            'node_ids': list(node_ids),
+            'nodes': node_rets,
+            'edges': edge_rets,
+            'primitives': primitives_rets,
+        }
 
     def match_query(self, query_id, cypher_query):
         query_graph = self.query_graphs[query_id]

@@ -142,7 +142,7 @@ class TestMatcher(MockedEventDrivenServiceStreamTestCase):
         query_id = 'query_id'
         vekg_stream = [1, 2, 3]
         self.service.query_matching[query_id] = {'cypher_query': 'some query'}
-        match_ret = {'some-ret':[1]}
+        match_ret = {'some-ret':[1], 'is_empty': False}
         self.service.graph_db_api = MagicMock()
         self.service.graph_db_api.match_query.return_value = match_ret
 
@@ -166,7 +166,7 @@ class TestMatcher(MockedEventDrivenServiceStreamTestCase):
         query_id = 'query_id'
         vekg_stream = [1, 2, 3]
         self.service.query_matching[query_id] = {'cypher_query': 'some query'}
-        match_ret = {}
+        match_ret = {'is_empty': True}
         self.service.graph_db_api = MagicMock()
         self.service.graph_db_api.match_query.return_value = match_ret
 

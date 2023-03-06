@@ -60,7 +60,7 @@ class Matcher(BaseEventDrivenCMDService):
             self.graph_db_api.add_query_vekg_window(query_id, vekg_stream)
             match_ret = self.graph_db_api.match_query(query_id, cypher_query)
             # if match_ret != []:
-            if len(match_ret.keys()):
+            if not match_ret.get('is_empty', True):
                 self.send_matched_events_to_forwarder(query_id, match_ret, vekg_stream)
         finally:
             self.graph_db_api.clean_query_vekg_window(query_id)
